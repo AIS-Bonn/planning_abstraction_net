@@ -12,27 +12,10 @@ Please see the see the respective paper for further information:
 "Learning Abstract Representations for Robot Locomotion Planning in High-dimensional Configuration Spaces" by Tobias Klamt and Sven Behnke.
 
 
-Initial setup
--------------
-Your planner should be copied to the `src/planner.cpp`
-```
-sudo apt-get install python-catkin-tools
-
-cd planner_framework
-
-source /opt/ros/kinetic/setup.bash
-
-catkin init
-catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS=-Wall
-catkin build
-
-echo ". $(pwd)/devel/setup.bash" >> ~/.bashrc
-```
-
 Generate Training Data
 ----------------------
 See the `src/training_data_generator.cpp` file to specifiy your planning problem:
-- In the constructor you can specify the parameters for your training data.
+- In the constructor, specify the parameters for your desired training data.
 - According to your robot representation you need to specify the function `TransformAbstractPoseToDetailedPose`.
 
 Start the necessary ros nodes:
