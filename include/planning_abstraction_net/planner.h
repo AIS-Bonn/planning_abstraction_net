@@ -16,6 +16,10 @@
 namespace planning_abstraction_net
 {
 
+// The planner is an arbitrary traditional (search-based, sampling-based) planner for
+// robot motion planning which uses a heuristic to guide planning. While for the planner itself
+// only a framework is given, the heuristic is realized through a learned abstract representation
+// and provided by the heuristic server.
 class Planner
 {
 public:

@@ -16,6 +16,7 @@
 
 #include <ros/node_handle.h>
 
+
 namespace planning_abstraction_net
 {
 struct DiscrPoseData
@@ -27,6 +28,15 @@ struct DiscrPoseData
 	boost::heap::fibonacci_heap<std::pair<Eigen::Vector3i, float>, boost::heap::compare<heap_compare_discr_pose>>::handle_type priority_queue_handle;
 };
 
+// The heuristic server provides a heuristic for a robot motion planning problem based on a 3D (x,y,yaw) abstract representation.
+// It therefor communicates with a respective CNN which learned this representation. The CNN is implemented in PyTorch, communication is done with ROS.
+// On initialization a height map is given to the heuristic server. From this height map several height map crops of a given size are extracted.
+// Those height map crops, together with goal poses (the start pose is assumed to be always in the crop center) are input
+// to the CNN which estimates costs to move the robot from the start to the goal. Height map crops, neighbor states for each abstract pose and respective
+// costs are precomputed once per map.
+// For a planning task, the goal needs to be set once. A one-to-any Dijkstra search then starts from this goal pose
+// and accesses the precomputed neighbors and costs. Thus, after this search finished, the g-costs each poses carries are
+// an estimation about the costs to the goal and can be used as a heuristic.
 class HeuristicServer
 {
 public:

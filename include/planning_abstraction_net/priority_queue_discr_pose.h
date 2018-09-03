@@ -5,7 +5,6 @@
 #ifndef PRIORITY_QUEUE_DISCR_POSE_H
 #define PRIORITY_QUEUE_DISCR_POSE_H
 
-#include <boost/heap/binomial_heap.hpp>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <boost/heap/policies.hpp>
 
@@ -13,6 +12,7 @@
 
 
 using namespace boost::heap;
+
 
 namespace planning_abstraction_net
 {
@@ -29,7 +29,8 @@ struct heap_compare_discr_pose
 	}
 };
 
-
+// The PriorityQueueDiscrPose is a Fibonacci heap-based priority queue of 3D poses
+// which can be used e.g.; for A* or Dijstra searches.
 class PriorityQueueDiscrPose
 {
 typedef fibonacci_heap<std::pair<Eigen::Vector3i, float>, compare<heap_compare_discr_pose>> fib_heap;

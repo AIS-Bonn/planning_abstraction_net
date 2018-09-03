@@ -11,6 +11,9 @@
 
 namespace planning_abstraction_net
 {
+
+// The DataSerializer belongs to the TrainingDataGenerator and serializes generated training data to a .txt file
+// which can be used for training of a abstract representation CNN
 class DataSerializer
 {
 public:

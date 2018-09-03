@@ -12,6 +12,8 @@
 namespace planning_abstraction_net
 {
 
+// The HeightMapGenerator generates squared height maps of a given size.
+// Different objects (cuboid, wall, stair) can be specified and placed in the map.
 class HeightMapGeneratorAbstrLearning
 {
 public:

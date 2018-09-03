@@ -8,6 +8,11 @@ namespace planning_abstraction_net
 {
 HeuristicServer::HeuristicServer()
 {
+	m_resolution_detailed = 0.025f;
+	m_resolution_abstract = 0.1f;
+	m_num_cells_crop = 72;
+	m_num_orientations_abstract = 16;
+
 	m_nh = ros::NodeHandle("~");
 	m_srv_client_set_map_crops = m_nh.serviceClient<planning_abstraction_net::SetMapCrops>("/abstraction_learning_network/set_map_crops");
 	m_srv_client_get_abstraction = m_nh.serviceClient<planning_abstraction_net::GetBatchAbstraction>("/abstraction_learning_network/get_batch_abstraction");
@@ -42,17 +47,16 @@ void HeuristicServer::Initialize(cv::Mat_<float>& height_map)
 	m_height_map = height_map;
 	m_num_cells_x_detailed = m_height_map.cols;
 	m_num_cells_y_detailed = m_height_map.rows;
-	m_resolution_detailed = 0.025f;
-	m_resolution_abstract = 0.1f;
 	m_num_cells_x_abstract = (int)(m_num_cells_x_detailed * m_resolution_detailed / m_resolution_abstract + 1e-3);
 	m_num_cells_y_abstract = (int)(m_num_cells_y_detailed * m_resolution_detailed / m_resolution_abstract + 1e-3);
-	m_num_cells_crop = 72;
-	m_num_orientations_abstract = 16;
 	m_map_crop_size = m_num_cells_crop * m_resolution_detailed;
-
-	m_pose_data = std::vector<DiscrPoseData>(m_num_cells_x_abstract * m_num_cells_y_abstract * m_num_orientations_abstract);
 	float orientation_step = 2 * M_PI / m_num_orientations_abstract;
+
+	// m_pose_data contains relevant data for each abstract pose in the map (e.g., g_costs/heuristic to the goal)
+	m_pose_data = std::vector<DiscrPoseData>(m_num_cells_x_abstract * m_num_cells_y_abstract * m_num_orientations_abstract);
 //
+	// Generate a map crop for each abstract pose in the map and send those map crops to the PyTorch CNN interface
+	// Since large amounts of data are generated, map crops are sent in chunks
 	for (uint orient = 0; orient < m_num_orientations_abstract; orient++)
 	{
 		std::vector<float> map_crops;
@@ -93,6 +97,8 @@ void HeuristicServer::Initialize(cv::Mat_<float>& height_map)
 		ROS_INFO_STREAM("Map crops set for orientation " << orient);
 	}
 
+	// For each abstract pose on the map, generate its potential neighbors. Since the heuristic computations starts from the planner goal pose,
+	// it is running backwards. Hence "inverse" neighbors are generated. Note that our cost function prefers driving forward and thus inverse actions may carry different costs.
 	m_inverse_neighbors = std::vector<std::vector<std::pair<Eigen::Vector3i, float>>> (m_num_cells_x_abstract * m_num_cells_y_abstract * m_num_orientations_abstract);
 	std::vector<Eigen::Vector3i> discr_poses;
 	for (uint orient = 0; orient < m_num_orientations_abstract; orient++)
@@ -113,6 +119,7 @@ void HeuristicServer::SetGoal(const RobotPose& goal_pose)
 {
 	Clear();
 
+	// Fit the goal pose to the abstract representation and start the backward one-to-any Dijkstra search
 	m_goal_pose = goal_pose;
 	m_goal_pose.base_coordinate = CellToCoordinates(CoordinatesToCell(m_goal_pose.base_coordinate, m_resolution_abstract), m_resolution_abstract);
 	FitOrientationToGrid(m_goal_pose.orientation, m_num_orientations_abstract);
@@ -135,7 +142,7 @@ float HeuristicServer::GetHeuristic(const RobotPose& pose) const
 	return m_pose_data[Index(Eigen::Vector3i(cell.x(), cell.y(), discr_orientation))].g_cost;
 }
 
-
+// One-to-any Dijkstra search to fill heuristics, starting from the set goal pose and accessing the precomputed neighbors and costs.
 void HeuristicServer::FillHeuristics()
 {
 	clock_t start_time = clock();
@@ -192,6 +199,7 @@ void HeuristicServer::FillHeuristics()
 }
 
 
+// For each given abstract pose, compute potential inverse neighbors and ask the CNN about feasibility and costs (via ROS-Service)
 void HeuristicServer::GetNeighboursFromAbstraction(const std::vector<Eigen::Vector3i>& discr_poses)
 {
 	float orientation_step = 2 * M_PI / m_num_orientations_abstract;
@@ -253,7 +261,7 @@ void HeuristicServer::GetNeighboursFromAbstraction(const std::vector<Eigen::Vect
 	}
 
 
-	// fill inverse neighbors
+	// save inverse neighbors in data structure
 	uint position_in_batch = 0;
 	for (Eigen::Vector3i discr_pose : discr_poses)
 	{
@@ -284,6 +292,7 @@ void HeuristicServer::GetNeighboursFromAbstraction(const std::vector<Eigen::Vect
 }
 
 
+// Extract a map crop from the given map at a given position with a given orientation.
 std::vector<float> HeuristicServer::GetHeightMapCrop(const Eigen::Vector2f& position, const float& orientation) const
 {
 	Eigen::Rotation2D<float> rotation_2D (orientation);
@@ -322,16 +331,19 @@ int HeuristicServer::Index(const Eigen::Vector3i& discr_pose) const
 }
 
 
+// Transformation from a map cell to the absolute coordinate
 Eigen::Vector2f HeuristicServer::CellToCoordinates(const Eigen::Vector2i cell, const float resolution) const
 {
 	return (cell.cast<float>() * resolution) + Eigen::Vector2f(0.5 * resolution, 0.5 * resolution);
 }
 
 
+// Transformation from an absolute coordinate to the map cell
 Eigen::Vector2i HeuristicServer::CoordinatesToCell(const Eigen::Vector2f coordinates, const float resolution) const
 {
 	return (coordinates / resolution).cast<int>();
 }
+
 
 int HeuristicServer::GetDiscreteOrientation(const float orientation, const unsigned int num_orientations) const
 {

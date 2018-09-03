@@ -10,26 +10,29 @@ namespace planning_abstraction_net
 
 TrainingDataGenerator::TrainingDataGenerator()
 {
-	m_map_size = 1.8f;
-	m_resolution_detailed = 0.025f;
-	m_resolution_abstract = 0.1f;
+	m_map_size = 1.8f; // size of the input map for the CNN in m
+	m_resolution_detailed = 0.025f; // resolution of this map in m
+	m_resolution_abstract = 0.1f; // resolution of the abstract representation which determines the size of actions
 	m_map_size_cells = (int)(m_map_size / m_resolution_detailed + 1e-3);
-	m_num_orientations = 64;
+	m_num_orientations = 64; // number of discrete orientations, the robot can have in the detailed planning representation
+	m_num_orientations_abstract = 16; // number of discrete orientations for the abstract representation.
 
 	m_nh = ros::NodeHandle("~");
 	m_srv_generate_training_data_from_random = m_nh.advertiseService("/planning_abstraction_net/generate_training_data_from_random", &TrainingDataGenerator::GenerateTrainingDataServiceCall, this);
 	m_srv_client_get_path_costs = m_nh.serviceClient<GetPathCosts>("/planner/get_path_costs");
 
+	// number of maps to be generated for each category
 	m_num_random_maps_1_obstacle = 1;
-	m_num_random_maps_2_obstacle = 0;
-	m_num_random_maps_3_obstacle = 0;
-	m_num_random_maps_1_wall = 0;
-	m_num_random_maps_2_wall = 0;
-	m_num_random_maps_1_wall_1_obstacle = 0;
-	m_num_random_maps_stairs = 0;
-	m_num_random_maps_1_wall_stairs = 0;
-	m_num_random_maps_stairs_focussed = 0;
+	m_num_random_maps_2_obstacle = 1;
+	m_num_random_maps_3_obstacle = 1;
+	m_num_random_maps_1_wall = 1;
+	m_num_random_maps_2_wall = 1;
+	m_num_random_maps_1_wall_1_obstacle = 1;
+	m_num_random_maps_stairs = 1;
+	m_num_random_maps_1_wall_stairs = 1;
+	m_num_random_maps_stairs_focussed = 1;
 
+	// path where the whole training data set should be saved
 	m_file_path = "/home/klamt/new_data_set.txt";
 
 	srand(time(NULL));
@@ -169,7 +172,8 @@ void TrainingDataGenerator::GenerateAbstractPoses(std::vector<std::vector<std::p
 {
 	std::vector<std::pair<RobotPose, RobotPose>> current_pose_vector;
 
-	// Create start pose with it base center at the map center and fixed orientation. There are no individual foot positions abstract poses.
+	// Create start pose with it base center at the map center and fixed orientation.
+	// There are no individual foot positions for abstract poses.
 	RobotPose start_pose;
 	start_pose.base_coordinate = Eigen::Vector2f(0.0f, 0.0f);
 	start_pose.orientation = 0.0f;
@@ -183,7 +187,8 @@ void TrainingDataGenerator::GenerateAbstractPoses(std::vector<std::vector<std::p
 	start_pose.abs_wheel_coordinate_fr = Eigen::Vector2f(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
 
 
-	// Create goal poses which is done by either omnidirectional driving within the used 20-neighborhood or by turning on the place
+	// Create goal poses which is done by either omnidirectional driving within the used 20-neighborhood or by turning on the spot to the
+	// next discrete orientation. The action step size is determined by the resolution of the abstract representation.
 	// Vector of movements in x,y,yaw (cell, cell, orientation step)
 	std::vector<Eigen::Vector3i> movement_vector;
 	movement_vector.push_back(Eigen::Vector3i( 1, 0, 0));
@@ -210,7 +215,7 @@ void TrainingDataGenerator::GenerateAbstractPoses(std::vector<std::vector<std::p
 	movement_vector.push_back(Eigen::Vector3i( 0, 0, -1));
 
 
-	float orientation_step = 2 * M_PI / 16;
+	float orientation_step = 2 * M_PI / m_num_orientations_abstract;
 
 	for (Eigen::Vector3i movement : movement_vector)
 	{
@@ -222,7 +227,7 @@ void TrainingDataGenerator::GenerateAbstractPoses(std::vector<std::vector<std::p
 		current_pose_vector.push_back(std::pair<RobotPose, RobotPose>(start_pose, goal_pose));
 	}
 
-
+	// for each height map, all 22 tasks are added to the training data
 	for (uint i = 0; i < height_maps.size(); i++)
 	{
 		poses.push_back(current_pose_vector);
@@ -258,8 +263,8 @@ void TrainingDataGenerator::TransformAbstractPosesToDetailedPoses(const std::vec
 RobotPose TrainingDataGenerator::TransformAbstractPoseToDetailedPose(const cv::Mat_<float>& height_map,
 								       const RobotPose& abstract_pose) const
 {
-	// This transformation is specific on your robot representation and needs to be specified by you.
-	// To obtain a working example code, I just return the input pose.
+	// This transformation is specific to your robot representation and needs to be specified by you.
+	// To obtain a working example code, I just return the input pose with some arbitrary foot positions.
 	RobotPose detailed_pose =  abstract_pose;
 	detailed_pose.rel_wheel_coordinate_fl = Eigen::Vector2f(0.3f, 0.2f);
 	detailed_pose.rel_wheel_coordinate_bl = Eigen::Vector2f(-0.3f, 0.2f);
@@ -274,6 +279,7 @@ int TrainingDataGenerator::DeleteTasksWithInfeasibleStart(std::vector<std::vecto
 							  std::vector<std::vector<std::pair<RobotPose, RobotPose>>>& abstract_poses,
 							  std::vector<cv::Mat_<float>>& height_maps)
 {
+	// situations with an infeasible start pose will not be considered during the robot motion planning problem of the planner and thus don't have to be learned.
 	uint map_index = 0;
 	int delete_counter = 0;
 
@@ -308,6 +314,8 @@ int TrainingDataGenerator::DeleteTasksWithInfeasibleStart(std::vector<std::vecto
 }
 
 
+// for each of the generated training tasks, the desired costs have to be determined which is done through the detailed planner
+// which is in the "src/planner.cpp" and which solves these training tasks via ROS-Services
 void TrainingDataGenerator::GeneratePathCosts(const std::vector<cv::Mat_<float>>& height_maps,
 					      const std::vector<std::vector<std::pair<RobotPose, RobotPose>>>& detailed_poses,
 					      std::vector<std::vector<float>>& costs)
@@ -319,9 +327,8 @@ void TrainingDataGenerator::GeneratePathCosts(const std::vector<cv::Mat_<float>>
 
 		std::vector<float> cost_vector;
 
-		// generate vectors of maps for service request
+		// generate a map vector for the service request
 		std::vector<float> heights;
-
 		int index_counter = 0;
 		for (int y = 0; y < m_map_size_cells; y++)
 			for (int x = 0; x < m_map_size_cells; x++)
@@ -333,7 +340,7 @@ void TrainingDataGenerator::GeneratePathCosts(const std::vector<cv::Mat_<float>>
 			RobotPose detailed_start_pose = detailed_poses[map_counter][task_counter].first;
 			RobotPose detailed_goal_pose = detailed_poses[map_counter][task_counter].second;
 
-			// If either start or goal pose are not feasible, asign infinite costs
+			// If either start or goal pose are not feasible, assign infinite costs
 			if (std::fabs(detailed_start_pose.base_coordinate.x()) > 1000.0f
 			 || std::fabs(detailed_start_pose.rel_wheel_coordinate_fl.x()) > 1000.0f
 			 || std::fabs(detailed_start_pose.rel_wheel_coordinate_bl.x()) > 1000.0f

@@ -22,6 +22,13 @@
 namespace planning_abstraction_net
 {
 
+// The TrainingDataGenerator generates data sets to train an abstract_representation_CNN.
+// It generates random height maps of different categories and defines planning tasks from a
+// start to a goal pose on these maps. The start pose is assumed to be in the robot center with
+// a fixed orientation. The goal pose is one abstract action away from the start pose. Both start
+// and goal poses are represented in three dimensions (x,y,yaw of the robot base). Other DoF are neglected.
+// Tasks be solved by a planner to obtain the desired path costs. This requires poses to be transformed
+// to the needed detailed planning representation. Finally data sets are serialized.
 class TrainingDataGenerator
 {
 public:
@@ -60,6 +67,7 @@ private:
 	float m_resolution_abstract;
 	int m_map_size_cells;
 	int m_num_orientations;
+	int m_num_orientations_abstract;
 
 	int m_num_random_maps_1_obstacle;
 	int m_num_random_maps_2_obstacle;
