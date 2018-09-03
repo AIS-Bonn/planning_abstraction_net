@@ -8,6 +8,8 @@ This repository contains the framework to extend a given high-dimensional planne
 - train the CNN, and
 - use the CNN as a planning heuristic.
 
+The software is implemented in C++ and PyTorch, using ROS for communication.
+
 Please see the see the respective paper for further information:
 "Learning Abstract Representations for Robot Locomotion Planning in High-dimensional Configuration Spaces" by Tobias Klamt and Sven Behnke.
 
