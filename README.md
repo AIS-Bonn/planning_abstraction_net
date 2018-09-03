@@ -73,6 +73,7 @@ Now, the heuristic server provides you a heuristic to that goal for an arbitrary
 
 License
 -------
+abstract_planning_representation_net is released under BSD-3.
 
 
 Contact
