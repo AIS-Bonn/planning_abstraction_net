@@ -14,16 +14,19 @@ Please see the see the respective paper for further information:
 
 Initial setup
 -------------
-Your planner should be copied to the src/planner.cpp
+Your planner should be copied to the `src/planner.cpp`
 ```
 sudo apt-get install python-catkin-tools
+
 cd planner_framework
+
 source /opt/ros/kinetic/setup.bash
+
 catkin init
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS=-Wall
 catkin build
-echo ". $(pwd)/devel/setup.bash" >> ~/.bashrc
 
+echo ". $(pwd)/devel/setup.bash" >> ~/.bashrc
 ```
 
 Generate Training Data
@@ -44,6 +47,37 @@ rosservice call /planning_abstraction_net/generate_training_data_from_random
 
 Train the CNN
 -------------
+Specify the path to your training data in `src/planning_abstraction_net/scripts/abstraction_learning_training.py` and start the trainnig:
+```
+cd src/planning_abstraction_net/scripts
+python abstraction_learning_training.py
+```
+
+Use the CNN as a Planning Heuristic
+-----------------------------------
+Specify the name of your desired network checkpoint in the function `handle_load_network` in `abstraction_learning_ros_interface.py`.
+Start the CNN ROS interface:
+```
+python abstraction_learning_ros_interface.py
+```
+In another terminal, trigger checkpoint loading:
+```
+rosservice call /abstraction_learning_network/load_network
+```
+
+In the `src/planner.cpp` make sure to call the `Init()` function as soon as the desired map is available. This triggers precomputation of the abstract representation and only needs to be done once per map. 
+
+As soon as a planning goal is set, give this to the heuristic server with `m_heuristic_server.SetGoal()`. 
+Now, the heuristic server provides you a heuristic to that goal for an arbitrary detailed pose in the map which you get with `m_heuristic_server.GetHeuristic()`.
+
+
+License
+-------
+
+
+Contact
+-------
+If you have any questions, mail Tobias Klamt (klamt@ais.uni-bonn.de).
 
 
 
