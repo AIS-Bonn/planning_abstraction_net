@@ -1,0 +1,32 @@
+uint32 map_size_cells
+float32 resolution
+float32 origin_x
+float32 origin_y
+float32[] heights
+
+float32 start_x
+float32 start_y
+float32 start_orient
+float32 start_rel_foot_fl_x
+float32 start_rel_foot_fl_y
+float32 start_rel_foot_bl_x
+float32 start_rel_foot_bl_y
+float32 start_rel_foot_br_x
+float32 start_rel_foot_br_y
+float32 start_rel_foot_fr_x
+float32 start_rel_foot_fr_y
+
+float32 goal_x
+float32 goal_y
+float32 goal_orient
+float32 goal_rel_foot_fl_x
+float32 goal_rel_foot_fl_y
+float32 goal_rel_foot_bl_x
+float32 goal_rel_foot_bl_y
+float32 goal_rel_foot_br_x
+float32 goal_rel_foot_br_y
+float32 goal_rel_foot_fr_x
+float32 goal_rel_foot_fr_y
+
+---
+float32 cost

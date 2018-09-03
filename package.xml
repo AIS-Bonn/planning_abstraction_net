@@ -1,0 +1,11 @@
+<package format="2">
+	<name>planning_abstraction_net</name>
+	<description>Learns a 3-dimensional abstract representation for a high-dimensional planning problem and uses this representation as a heuristic.</description>
+	<version>0.0.1</version>
+	<license>BSD</license>
+	<maintainer email="klamt@ais.uni-bonn.de">Tobias Klamt</maintainer>
+
+	<buildtool_depend>catkin</buildtool_depend>
+	<depend> cv_bridge </depend>
+	<depend> eigen_conversions </depend>
+</package>

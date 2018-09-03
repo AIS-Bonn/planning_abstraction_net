@@ -1,0 +1,12 @@
+uint32 num_crops_x
+uint32 num_crops_y
+uint32 num_crops_orient
+uint32 crop_size
+
+uint32[] crop_x
+uint32[] crop_y
+uint32[] crop_orient
+float32[] heights
+
+---
+
