@@ -29,9 +29,8 @@ rosservice call /planning_abstraction_net/generate_training_data_from_random
 
 Train the CNN
 -------------
-Specify the path to your training data in `/scripts/abstraction_learning_training.py` and start the training:
+Specify the path to your training data in `scripts/abstraction_learning_training.py` and start the training:
 ```
-cd src/planning_abstraction_net/scripts
 python abstraction_learning_training.py
 ```
 
