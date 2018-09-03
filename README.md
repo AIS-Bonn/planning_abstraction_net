@@ -8,6 +8,8 @@ This repository contains the framework to extend a given high-dimensional planne
 - train the CNN, and
 - use the CNN as a planning heuristic.
 
+The software is implemented in C++ and PyTorch, using ROS for communication.
+
 Please see the see the respective paper for further information:
 "Learning Abstract Representations for Robot Locomotion Planning in High-dimensional Configuration Spaces" by Tobias Klamt and Sven Behnke.
 
@@ -20,7 +22,6 @@ See the `src/training_data_generator.cpp` file to specifiy your planning problem
 
 Start the necessary ros nodes:
 ```
-roscore&
 roslaunch planning_abstraction_net planning_framework.launch
 ```
 In another terminal, trigger the training data generation:
@@ -30,9 +31,8 @@ rosservice call /planning_abstraction_net/generate_training_data_from_random
 
 Train the CNN
 -------------
-Specify the path to your training data in `src/planning_abstraction_net/scripts/abstraction_learning_training.py` and start the trainnig:
+Specify the path to your training data in `scripts/abstraction_learning_training.py` and start the training:
 ```
-cd src/planning_abstraction_net/scripts
 python abstraction_learning_training.py
 ```
 
